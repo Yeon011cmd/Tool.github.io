@@ -2,54 +2,89 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>PER 적정주가 계산기</title>
+<title>주가 가치 계산기</title>
 <style>
-body {font-family: Arial; padding: 20px; max-width: 500px; margin: auto;}
-input {width: 100%; padding: 8px; margin: 5px 0;}
-button {padding: 10px; width: 100%; background: black; color: white;}
-.result {margin-top: 20px;}
+body { font-family: Arial; padding:20px; max-width:600px; margin:auto;}
+h2 { margin-top:40px; }
+input { width:100%; padding:8px; margin:5px 0; }
+button { padding:10px; margin-top:10px; width:100%; }
+.result { margin-top:10px; font-weight:bold; }
 </style>
 </head>
 <body>
 
-<h2>PER 기반 적정주가 계산기</h2>
+<h1>주가 가치지표 통합 계산기</h1>
 
-<label>EPS</label>
-<input type="number" id="eps">
+<h2>① PER 기반 적정주가 계산기</h2>
 
-<label>목표 PER</label>
-<input type="number" id="per">
+<input type="number" id="eps" placeholder="EPS 입력">
+<input type="number" id="per" placeholder="목표 PER 입력">
+<button onclick="calcPER()">적정주가 계산</button>
+<p class="result" id="perResult"></p>
 
-<label>현재 주가</label>
-<input type="number" id="price">
+<h2>② 미국주식 실질 수익 계산기 (환전 포함)</h2>
 
-<label>안전마진 (%)</label>
-<input type="number" id="margin" value="20">
+<input type="number" id="buyPrice" placeholder="매수가 (달러)">
+<input type="number" id="sellPrice" placeholder="매도가 (달러)">
+<input type="number" id="quantity" placeholder="수량">
 
-<button onclick="calculate()">계산하기</button>
+<input type="number" id="buyRate" placeholder="매수 환율">
+<input type="number" id="sellRate" placeholder="매도 환율">
+<input type="number" id="baseRate" placeholder="기준 환율 (스프레드 계산용)">
 
-<div class="result">
-<p>적정주가: <span id="fair"></span></p>
-<p>안전마진 적용 가격: <span id="safe"></span></p>
-<p>상승여력(%): <span id="upside"></span></p>
-</div>
+<button onclick="calcProfit()">실질 수익 계산</button>
+<p class="result" id="profitResult"></p>
 
 <script>
-function calculate() {
-let eps = parseFloat(document.getElementById("eps").value);
-let per = parseFloat(document.getElementById("per").value);
-let price = parseFloat(document.getElementById("price").value);
-let margin = parseFloat(document.getElementById("margin").value);
 
-let fair = eps * per;
-let safe = fair * (1 - margin/100);
-let upside = ((fair - price) / price) * 100;
+function calcPER(){
+  let eps = parseFloat(document.getElementById("eps").value);
+  let per = parseFloat(document.getElementById("per").value);
 
-document.getElementById("fair").innerText = fair.toFixed(2);
-document.getElementById("safe").innerText = safe.toFixed(2);
-document.getElementById("upside").innerText = upside.toFixed(2) + "%";
+  if(isNaN(eps) || isNaN(per)){
+    document.getElementById("perResult").innerHTML = "값을 모두 입력해주세요.";
+    return;
+  }
+
+  let fairPrice = eps * per;
+  document.getElementById("perResult").innerHTML =
+    "적정주가: " + fairPrice.toFixed(2);
 }
+
+function calcProfit(){
+  let buy = parseFloat(document.getElementById("buyPrice").value);
+  let sell = parseFloat(document.getElementById("sellPrice").value);
+  let qty = parseFloat(document.getElementById("quantity").value);
+
+  let buyRate = parseFloat(document.getElementById("buyRate").value);
+  let sellRate = parseFloat(document.getElementById("sellRate").value);
+  let baseRate = parseFloat(document.getElementById("baseRate").value);
+
+  if(isNaN(buy)||isNaN(sell)||isNaN(qty)||isNaN(buyRate)||isNaN(sellRate)||isNaN(baseRate)){
+    document.getElementById("profitResult").innerHTML = "값을 모두 입력해주세요.";
+    return;
+  }
+
+  let dollarProfit = (sell - buy) * qty;
+
+  let buyKRW = buy * qty * buyRate;
+  let sellKRW = sell * qty * sellRate;
+
+  let grossKRWProfit = sellKRW - buyKRW;
+
+  let spreadCostBuy = buy * qty * (buyRate - baseRate);
+  let spreadCostSell = sell * qty * (sellRate - baseRate);
+
+  let totalSpread = spreadCostBuy + spreadCostSell;
+
+  document.getElementById("profitResult").innerHTML =
+    "달러 수익: $" + dollarProfit.toFixed(2) + "<br>" +
+    "환전 스프레드 비용: " + totalSpread.toFixed(0) + "원<br>" +
+    "실질 원화 순이익: " + grossKRWProfit.toFixed(0) + "원";
+}
+
 </script>
 
 </body>
 </html>
+
