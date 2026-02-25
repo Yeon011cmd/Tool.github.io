@@ -1,90 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>주가 가치 계산기</title>
-<style>
-body { font-family: Arial; padding:20px; max-width:600px; margin:auto;}
-h2 { margin-top:40px; }
-input { width:100%; padding:8px; margin:5px 0; }
-button { padding:10px; margin-top:10px; width:100%; }
-.result { margin-top:10px; font-weight:bold; }
-</style>
+    <meta charset="UTF-8">
+    <title>예상 주가 계산기</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        h2 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-<h1>주가 가치지표 통합 계산기</h1>
+<h1>주가 적정가 계산기</h1>
 
-<h2>① PER 기반 적정주가 계산기</h2>
+<h2>1. PER 기반 예상 주가</h2>
+<label>EPS (주당순이익)</label>
+<input type="number" id="eps">
 
-<input type="number" id="eps" placeholder="EPS 입력">
-<input type="number" id="per" placeholder="목표 PER 입력">
-<button onclick="calcPER()">적정주가 계산</button>
-<p class="result" id="perResult"></p>
+<label>목표 PER</label>
+<input type="number" id="per">
 
-<h2>② 미국주식 실질 수익 계산기 (환전 포함)</h2>
+<button onclick="calculatePER()">계산하기</button>
 
-<input type="number" id="buyPrice" placeholder="매수가 (달러)">
-<input type="number" id="sellPrice" placeholder="매도가 (달러)">
-<input type="number" id="quantity" placeholder="수량">
+<div class="result" id="perResult"></div>
 
-<input type="number" id="buyRate" placeholder="매수 환율">
-<input type="number" id="sellRate" placeholder="매도 환율">
-<input type="number" id="baseRate" placeholder="기준 환율 (스프레드 계산용)">
 
-<button onclick="calcProfit()">실질 수익 계산</button>
-<p class="result" id="profitResult"></p>
+<h2>2. PEG 기반 성장 반영 계산</h2>
+<label>예상 성장률 (%)</label>
+<input type="number" id="growth">
+
+<button onclick="calculatePEG()">PEG 기준 계산</button>
+
+<div class="result" id="pegResult"></div>
+
+
+<h2>3. 안전마진 적용</h2>
+<label>안전마진 (%)</label>
+<input type="number" id="margin" placeholder="예: 20">
+
+<button onclick="calculateMargin()">안전마진 적용</button>
+
+<div class="result" id="marginResult"></div>
+
 
 <script>
+let fairPrice = 0;
 
-function calcPER(){
-  let eps = parseFloat(document.getElementById("eps").value);
-  let per = parseFloat(document.getElementById("per").value);
+function calculatePER() {
+    const eps = parseFloat(document.getElementById("eps").value);
+    const per = parseFloat(document.getElementById("per").value);
 
-  if(isNaN(eps) || isNaN(per)){
-    document.getElementById("perResult").innerHTML = "값을 모두 입력해주세요.";
-    return;
-  }
+    if (!eps || !per) {
+        alert("값을 모두 입력하세요");
+        return;
+    }
 
-  let fairPrice = eps * per;
-  document.getElementById("perResult").innerHTML =
-    "적정주가: " + fairPrice.toFixed(2);
+    fairPrice = eps * per;
+    document.getElementById("perResult").innerHTML =
+        "예상 적정 주가: " + fairPrice.toLocaleString() + " 원";
 }
 
-function calcProfit(){
-  let buy = parseFloat(document.getElementById("buyPrice").value);
-  let sell = parseFloat(document.getElementById("sellPrice").value);
-  let qty = parseFloat(document.getElementById("quantity").value);
+function calculatePEG() {
+    const eps = parseFloat(document.getElementById("eps").value);
+    const growth = parseFloat(document.getElementById("growth").value);
 
-  let buyRate = parseFloat(document.getElementById("buyRate").value);
-  let sellRate = parseFloat(document.getElementById("sellRate").value);
-  let baseRate = parseFloat(document.getElementById("baseRate").value);
+    if (!eps || !growth) {
+        alert("값을 모두 입력하세요");
+        return;
+    }
 
-  if(isNaN(buy)||isNaN(sell)||isNaN(qty)||isNaN(buyRate)||isNaN(sellRate)||isNaN(baseRate)){
-    document.getElementById("profitResult").innerHTML = "값을 모두 입력해주세요.";
-    return;
-  }
+    const pegPER = growth;
+    fairPrice = eps * pegPER;
 
-  let dollarProfit = (sell - buy) * qty;
-
-  let buyKRW = buy * qty * buyRate;
-  let sellKRW = sell * qty * sellRate;
-
-  let grossKRWProfit = sellKRW - buyKRW;
-
-  let spreadCostBuy = buy * qty * (buyRate - baseRate);
-  let spreadCostSell = sell * qty * (sellRate - baseRate);
-
-  let totalSpread = spreadCostBuy + spreadCostSell;
-
-  document.getElementById("profitResult").innerHTML =
-    "달러 수익: $" + dollarProfit.toFixed(2) + "<br>" +
-    "환전 스프레드 비용: " + totalSpread.toFixed(0) + "원<br>" +
-    "실질 원화 순이익: " + grossKRWProfit.toFixed(0) + "원";
+    document.getElementById("pegResult").innerHTML =
+        "PEG 기준 적정 주가: " + fairPrice.toLocaleString() + " 원";
 }
 
+function calculateMargin() {
+    const margin = parseFloat(document.getElementById("margin").value);
+
+    if (!fairPrice || !margin) {
+        alert("먼저 적정 주가를 계산하세요");
+        return;
+    }
+
+    const buyPrice = fairPrice * (1 - margin / 100);
+
+    document.getElementById("marginResult").innerHTML =
+        "안전마진 적용 매수가: " + buyPrice.toLocaleString() + " 원";
+}
 </script>
 
 </body>
 </html>
-
