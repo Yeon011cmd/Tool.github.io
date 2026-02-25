@@ -1,89 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>적정 주가 계산기 PRO</title>
-<style>
-    body {
-        font-family: Arial;
-        max-width: 750px;
-        margin: 40px auto;
-        padding: 20px;
-    }
-    h2 {
-        border-bottom: 1px solid #ccc;
-        padding-bottom: 5px;
-        margin-top: 40px;
-    }
-    input {
-        width: 100%;
-        padding: 8px;
-        margin: 5px 0 15px 0;
-    }
-    button {
-        padding: 10px;
-        width: 100%;
-        cursor: pointer;
-        margin-bottom: 10px;
-    }
-    .result {
-        margin-top: 15px;
-        font-weight: bold;
-    }
-</style>
+    <meta charset="UTF-8">
+    <title>적정 주가 계산기</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        h2 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .result {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .note {
+            margin-top: 40px;
+            font-size: 13px;
+            color: gray;
+        }
+    </style>
 </head>
 <body>
 
-<h1>주가 적정가 계산기 PRO</h1>
+<h1>주식 적정가 계산기</h1>
 
-<h2>1. PER 기반 적정 주가</h2>
-
+<h2>1. PER 기반 예상 주가</h2>
 <label>EPS (주당순이익)</label>
-<input type="number" id="eps" placeholder="예: 5000">
+<input type="number" id="eps">
 
 <label>목표 PER</label>
-<input type="number" id="per" placeholder="예: 15">
+<input type="number" id="per">
 
-<button onclick="calculatePER()">PER 기준 계산</button>
+<button onclick="calculatePER()">계산하기</button>
 
 <div class="result" id="perResult"></div>
 
 
-<h2>2. PEG 기반 성장 반영</h2>
+<h2>2. PEG 계산 (성장 대비 밸류에이션 점검)</h2>
+<label>현재 PER</label>
+<input type="number" id="currentPER">
 
 <label>예상 성장률 (%)</label>
-<input type="number" id="growth" placeholder="예: 10">
+<input type="number" id="growthRate">
 
-<button onclick="calculatePEG()">PEG 기준 계산 (PEG=1)</button>
+<button onclick="calculatePEG()">PEG 계산</button>
 
 <div class="result" id="pegResult"></div>
 
 
-<h2>3. 현재가 비교 및 안전마진</h2>
-
-<label>현재 주가</label>
-<input type="number" id="currentPrice" placeholder="예: 60000">
-
+<h2>3. 안전마진 적용 매수가</h2>
 <label>안전마진 (%)</label>
 <input type="number" id="margin" placeholder="예: 20">
 
-<button onclick="compareAndMargin()">현재가 비교 + 안전마진 계산</button>
+<button onclick="calculateMargin()">안전마진 적용</button>
 
-<div class="result" id="compareResult"></div>
+<div class="result" id="marginResult"></div>
 
 
-<h2>4. 3년 기대수익률 계산</h2>
-
-<button onclick="calculateFuture()">3년 기대수익률 계산</button>
-
-<div class="result" id="futureResult"></div>
+<div class="note">
+본 계산기는 원(₩) 기준으로 설계되었습니다. 
+달러 기준 종목은 환율을 고려하여 입력하시기 바랍니다.
+</div>
 
 
 <script>
 let fairPrice = 0;
-let growthRate = 0;
 
-// PER 계산
 function calculatePER() {
     const eps = parseFloat(document.getElementById("eps").value);
     const per = parseFloat(document.getElementById("per").value);
@@ -96,64 +94,52 @@ function calculatePER() {
     fairPrice = eps * per;
 
     document.getElementById("perResult").innerHTML =
-        "PER 기준 적정 주가: " + fairPrice.toLocaleString() + " 원";
+        "예상 적정 주가: " + fairPrice.toLocaleString() + " 원";
 }
 
-// PEG 계산 (PEG=1 기준)
 function calculatePEG() {
-    const eps = parseFloat(document.getElementById("eps").value);
-    growthRate = parseFloat(document.getElementById("growth").value);
+    const per = parseFloat(document.getElementById("currentPER").value);
+    const growth = parseFloat(document.getElementById("growthRate").value);
 
-    if (isNaN(eps) || isNaN(growthRate)) {
-        alert("EPS와 성장률을 입력하세요");
+    if (isNaN(per) || isNaN(growth) || growth === 0) {
+        alert("PER과 성장률을 정확히 입력하세요");
         return;
     }
 
-    const pegPER = growthRate; // PEG=1 가정
-    fairPrice = eps * pegPER;
+    const peg = per / growth;
+
+    let interpretation = "";
+
+    if (peg < 1) {
+        interpretation = "PEG 1 미만 → 성장 대비 저평가 가능성";
+    } else if (peg >= 1 && peg <= 2) {
+        interpretation = "PEG 1~2 → 성장 대비 합리적 수준";
+    } else {
+        interpretation = "PEG 2 초과 → 성장 대비 고평가 가능성";
+    }
 
     document.getElementById("pegResult").innerHTML =
-        "PEG 기준 적정 주가: " + fairPrice.toLocaleString() + " 원";
+        "PEG 값: " + peg.toFixed(2) + "<br>" + interpretation;
 }
 
-// 현재가 비교 + 안전마진
-function compareAndMargin() {
-    const current = parseFloat(document.getElementById("currentPrice").value);
+function calculateMargin() {
     const margin = parseFloat(document.getElementById("margin").value);
 
-    if (isNaN(current) || fairPrice === 0) {
-        alert("먼저 적정 주가를 계산하세요");
+    if (fairPrice === 0) {
+        alert("먼저 PER 기반 적정 주가를 계산하세요");
         return;
     }
 
-    const gap = ((fairPrice - current) / current) * 100;
-    const buyPrice = isNaN(margin) ? null : fairPrice * (1 - margin / 100);
-
-    let resultText = "현재가 대비 괴리율: " + gap.toFixed(2) + "%";
-
-    if (buyPrice !== null) {
-        resultText += "<br>안전마진 적용 매수가: " + buyPrice.toLocaleString() + " 원";
-    }
-
-    document.getElementById("compareResult").innerHTML = resultText;
-}
-
-// 3년 기대수익률 계산
-function calculateFuture() {
-
-    if (fairPrice === 0 || growthRate === 0) {
-        alert("먼저 성장률 기반 적정 주가를 계산하세요");
+    if (isNaN(margin)) {
+        alert("안전마진을 입력하세요");
         return;
     }
 
-    const futurePrice = fairPrice * Math.pow((1 + growthRate / 100), 3);
-    const expectedReturn = ((futurePrice - fairPrice) / fairPrice) * 100;
+    const buyPrice = fairPrice * (1 - margin / 100);
 
-    document.getElementById("futureResult").innerHTML =
-        "3년 후 예상 주가: " + futurePrice.toLocaleString() + " 원"
-        + "<br>3년 기대수익률: " + expectedReturn.toFixed(2) + "%";
+    document.getElementById("marginResult").innerHTML =
+        "안전마진 적용 매수가: " + buyPrice.toLocaleString() + " 원";
 }
-
 </script>
 
 </body>
